@@ -9,7 +9,7 @@ import { TripsLayer } from "@deck.gl/geo-layers";
 import { INITIAL_VIEW_STATE,MAP_STYLE,INITIAL_COLORS } from './services/config';
 import { Keyboard } from '@mui/icons-material';
 import useSmoothStateChange from '../hooks/selectionRadiusOpacity';
-
+import start  from '../algo/Pathfinding.js';
 
 
 function Map() {
@@ -22,15 +22,26 @@ function Map() {
     const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
     const [fadeRadiusReverse, setFadeRadiusReverse] = useState(false);
     const [colors, setColors] = useState(INITIAL_COLORS);
+    const [time, setTime] = useState(0);
+    const [animationEnded, setAnimationEnded] = useState(false);
+    const [playbackOn, setPlaybackOn] = useState(false);
+    const [settings, setSettings] = useState({ algorithm: "Dijkstra", radius: 4, speed: 5 });
+
 
     const fadeRadius = useRef();
+    const ui = useRef();
+    const state = useRef(new PathfindingState());
 
     
     
     const selectionRadiusOpacity= useSmoothStateChange(0,0,1,400,fadeRadius.current , fadeRadiusReverse)
-
-         
-
+    function startPathfinding() {
+        setTimeout(() => {
+          clearPath();
+          state.current.start(settings.algorithm);
+          setStarted(true);
+        }, 400);
+      }
   return (
     <>
         <div>
@@ -61,13 +72,28 @@ function Map() {
                 currentTime={time}
                 getColor={d => colors[d.color]}
                 updateTriggers={{
-                    getColor: [colors.path, colors.route]
+                getColor: [colors.path, colors.route]
                 }}
                 />
 
                 <ScatterplotLayer 
                 id="start-end-points"
-                
+                date ={[
+                    ...(startNode?[{coordinates:[startNode.lon , startNode.lat],color:colors.startNodeFill , lineColor: colors.startNodeBorder}]: []),
+                    ...(endNode?[{coordinates:[endNode.lon , endNode.lat],color:colors.endNodeFill , lineColor: colors.endNodeBorder}]: [])
+                ]}
+                pickable={true}
+                opacity={true}
+                stroked={true}
+                filled={true}
+                radiusScale={1}
+                radiusMinPixels={7}
+                radiusMaxPixels={20}
+                lineWidthMinPixels={1}
+                lineWidthMaxPixels={3}
+                getPosition={d=> d.coordinates}
+                getFillColor={d=> d.color}
+                getLineColor={d=> d.lineColor}
                 />
 
                 <MapGL 
@@ -78,8 +104,16 @@ function Map() {
 
             </DeckGL>
 
-            <div>
-            </div>
+            <Interface 
+            ref={ui}
+            canStart={startNode && startNode}
+            started = {started}
+            animationEnded={animationEnded}
+            playbackOn={playbackOn}
+            time={time}
+            startPathfinding={startPathfinding}
+
+            />
         </div>
     </>
 )
