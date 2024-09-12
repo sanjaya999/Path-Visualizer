@@ -32,16 +32,23 @@ function Map() {
     const ui = useRef();
     const state = useRef(new PathfindingState());
 
-    
-    
-    const selectionRadiusOpacity= useSmoothStateChange(0,0,1,400,fadeRadius.current , fadeRadiusReverse)
+
     function startPathfinding() {
         setTimeout(() => {
           clearPath();
-          state.current.start(settings.algorithm);
+          start(settings.algorithm);  
           setStarted(true);
         }, 400);
       }
+  
+      const handleNextStep = useCallback(() => {
+        const updatedNodes = nextStep();
+        if (updatedNodes.length === 0) {
+            setAnimationEnded(true);
+        }
+        setTripsData(prevTripsData => [...prevTripsData, ...updatedNodes]);
+    }, []);
+
   return (
     <>
         <div>
